@@ -1,0 +1,11 @@
+langchain
+langgraph
+chromadb
+trafilatura
+ddgs
+langchain-ollama
+sentence-transformers
+langchain-huggingface
+langchain-text-splitters
+lxml_html_clean
+pydantic
