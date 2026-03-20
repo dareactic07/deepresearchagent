@@ -16,11 +16,12 @@ def main():
     
     #    settings.validate()
     
-    # Clear previous persistent facts so the chat loop is exclusive to this run's topic
+    # 2. Setup session-isolated vector store
     from memory.vector_store import vector_store
+    vector_store.set_session("cli_session")
     vector_store.clear()
     
-    # 2. Setup initial state
+    # 3. Setup initial state
     initial_state = {
         "topic": args.topic,
         "questions": [],

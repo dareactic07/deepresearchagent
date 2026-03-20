@@ -1,16 +1,11 @@
 langchain
 langgraph
 chromadb
-trafilatura
-ddgs
-langchain-ollama
 sentence-transformers
 langchain-huggingface
 langchain-text-splitters
-lxml_html_clean
 pydantic
 streamlit
-beautifulsoup4
 tavily-python
 python-dotenv
 langchain-groq
