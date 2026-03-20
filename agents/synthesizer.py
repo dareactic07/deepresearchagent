@@ -1,5 +1,5 @@
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from config.settings import settings
 from graph.state import ResearchState
 from utils.llm_lock import llm_lock
@@ -19,7 +19,7 @@ def synthesizer_node(state: ResearchState) -> dict:
                 
     source_list = "\n".join([f"- {s}" for s in sources])
     
-    llm = ChatOllama(model=settings.LLM_MODEL, temperature=0.4)
+    llm = ChatGroq(model=settings.LLM_MODEL, api_key=settings.GROQ_API_KEY, temperature=0.4)
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are an expert research analyst and technical report writer. "
@@ -31,7 +31,7 @@ def synthesizer_node(state: ResearchState) -> dict:
                    "## Key Findings\n<Detailed bullet points with deep context>\n\n"
                    "## Detailed Insights\n<Multiple extensive sections explaining the facts in depth, categorized logically>\n\n"
                    "## Sources and Confidence Breakdown\n"
-                   "<Provide a detailed bulleted breakdown that explicitly lists every fact utilized, the exact valid Source URL it came from, and its exact confidence score (e.g., - Fact: [fact text] | Source: [URL] | Confidence: [score])>\n"),
+                   "<Provide a detailed bulleted breakdown that explicitly lists every fact utilized, the exact valid Source URL it came from, and its exact confidence score>\n"),
         ("human", "Topic: {topic}\n\nExtracted Facts:\n{facts}\n\nWrite the most detailed, extensive report possible based on these facts. Do NOT hallucinate URLs; use only the sources provided in the facts.")
     ])
     

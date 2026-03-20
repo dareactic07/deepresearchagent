@@ -1,91 +1,82 @@
-# Multi-Agent Deep Researcher (Streamlit Web App) 🕵️‍♂️🤖
+# Deep Research Agent 🕵️‍♂️🤖
+### Powered by Groq LPUs & Tavily Search
 
-A fully modular, production-quality multi-agent research assistant built with **LangGraph, LangChain, Ollama (LLaMA 3), HuggingFace embeddings, ChromaDB, and Streamlit**. 
+A production-grade multi-agent research assistant built with **LangGraph, LangChain, Groq (Llama 3.3/70B), Tavily, and Streamlit**. 
 
-This system takes a user research topic, automatically decomposes it into high-value sub-questions, parallel-searches the web, extracts fact-based knowledge, evaluates the findings, and synthesizes a comprehensive final markdown report. It also features a sleek, **Perplexity-style web UI** for historical chat tracking!
-
----
-
-## 🌟 Features
-
-- **Multi-Agent Orchestration**: Utilizes LangGraph for stateful, cyclic, and parallel execution.
-- **Sleek Web Interface**: Runs a pure-Python Streamlit UI with sidebar chat-histories, dynamic text auto-resizing, and seamless visual feedback.
-- **Persistent Long-Term Memory**: High-confidence facts are embedded using `BAAI/bge-small-en` and stored locally in a persistent, session-isolated ChromaDB vector store.
-- **Human-in-the-Loop (HITL)**: The AI pauses before diving into internet scrapes, allowing you to explicitly modify its research Plan via the UI!
-- **Deep Search Follow Ups**: Chatting inside an active session utilizes Local RAG context isolation. However, you can toggle **Deep Search** on, which automatically kicks off a DuckDuckGo investigation to find live answers to new questions and inject them directly into your database.
-- **Local AI Engines**: Powered entirely by local `llama3` via Ollama. No paid APIs required!
+This system takes a complex research topic, decomposes it into targeted sub-questions, parallel-searches the live web using Tavily, extracts truth-based facts, evaluates findings, and synthesizes a comprehensive final markdown paper. It features a **Perplexity-style chat interface** for historical exploration and real-time knowledge injection!
 
 ---
 
-## 🏗️ Architecture Workflow
+## 🌟 Key Features
 
-1. **Planner Agent**: Uses structured output to decompose the main topic into a specific set of optimized research questions.
-2. **Human Approval Checkpoint**: Streamlit natively pauses Langgraph execution and renders the plan for user approval.
-3. **Search Agent**: Executes DuckDuckGo searches for each generated research question.
-4. **Scraper Agent**: Fetches raw HTML via Jina Reader or BeautifulSoup, chunking text cleanly.
-5. **Evaluator Agent**: Inspects the scraped chunks. Extracts high-quality, non-redundant facts, assigning Float-based Confidence Scores.
-6. **Memory Store**: Persists validated high-confidence facts into an isolated ChromaDB collection.
-7. **Synthesizer Agent**: Aggregates the validated truth data to compile a beautifully formatted, exhaustive Markdown report.
+- **Ultra-Fast LLM Inference**: Migrated from local execution to **Groq Cloud LPUs**, providing sub-second reasoning and report generation.
+- **High-Fidelity Web Search**: Integrated **Tavily Search API** for clean, AI-ready raw content and scientific-grade discovery.
+- **Deep Search Follow-Ups**: Toggle "Deep Search" in chat to trigger autonomous web investigations for follow-up questions.
+- **Adaptive Context Fragmentation**: Automatically detects massive web pages and fragments them into searchable windows to survive strict **TPM (Tokens Per Minute)** limits.
+- **Persistent Knowledge Base**: All discovered facts are embedded via `BAAI/bge-small-en` and stored in a session-isolated **ChromaDB** vector store.
+- **Human-in-the-Loop (HITL)**: The agent pauses for your approval of the research plan before spending search credits!
 
 ---
 
-## 🚀 Installation & Setup
+## 🏗️ The Multi-Agent Architecture
+
+1.  **Planner**: Decomposes the topic into $N$ specific, high-entropy research questions. 
+2.  **Search Node**: Paralellizes Tavily API calls for every question simultaneously.
+3.  **Evaluator**: (The Critic) Inspects raw HTML fragments, assigns confidence scores, and filters out hallucinations/redundancy.
+4.  **Memory Store**: Persists validated truths into long-term vector memory.
+5.  **Synthesizer**: Compiles the final exhaustive Markdown report with citations and confidence metrics.
+
+---
+
+## 🚀 Installation & Quickstart
 
 ### Prerequisites
 - Python 3.10+
-- [Ollama](https://ollama.com/) installed and running locally.
+- **Groq API Key** ([Get one here](https://console.groq.com/))
+- **Tavily API Key** ([Get one here](https://tavily.com/))
 
 ### Get Started
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/dareactic07/deepresearchagent.git
-   cd deepresearchagent
-   ```
+1.  **Clone & Enter:**
+    ```bash
+    git clone https://github.com/dareactic07/deepresearchagent.git
+    cd deepresearchagent
+    ```
 
-2. **Set up a virtual environment (Recommended):**
-   ```bash
-   python -m venv venv
-   # On Windows
-   .\venv\Scripts\activate
-   # On Mac/Linux
-   source venv/bin/activate
-   ```
+2.  **Environment Setup:**
+    ```bash
+    python -m venv venv
+    .\venv\Scripts\activate  # Windows
+    source venv/bin/activate # Mac/Linux
+    pip install -r requirements.txt
+    ```
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+3.  **API Configuration:**
+    Create a `.env` file in the root directory:
+    ```env
+    GROQ_API_KEY=your_groq_key_here
+    TAVILY_API_KEY=your_tavily_key_here
+    ```
 
-4. **Pull the Local LLM:**
-   Make sure Ollama is open/running in the background, and pull the target model:
-   ```bash
-   ollama pull llama3
-   ```
-
----
-
-## ⚙️ Configuration (System Scaling)
-
-Because this agent runs completely locally, it can be computationally heavy. Open `config/settings.py` to adjust performance parameters perfectly to your hardware!
-
-- `MAX_QUESTIONS`: Defines how many sub-topics the planner explores.
-- `TOP_K_RESULTS`: Defines how many DuckDuckGo URLs are scraped per question.
-- `MAX_CHUNKS_PER_URL`: Defines how deeply the LLM reads into each article.
-
-**Hardware Recommendations:**
-- 🟢 **Entry-level (4GB VRAM)**: `MAX_QUESTIONS=2, TOP_K_RESULTS=3, MAX_CHUNKS=4`
-- 🟡 **Mid-range (8GB VRAM)**: `MAX_QUESTIONS=3, TOP_K_RESULTS=3, MAX_CHUNKS=5`
-- 🔴 **High-end (16GB+ VRAM)**: `MAX_QUESTIONS=5, TOP_K_RESULTS=5, MAX_CHUNKS=15`
+4.  **Launch the UI:**
+    ```bash
+    python -m streamlit run app.py
+    ```
 
 ---
 
-## 🖥️ Usage
+## ⚙️ Performance Tuning (`config/settings.py`)
 
-We have entirely deprecated the legacy terminal interface `main.py` in favor of a gorgeous `Streamlit` Web App UI with integrated SQLite Session routing.
+Since the agent uses cloud APIs, the hardware load is minimal, but you can scale the research depth:
 
-Simply boot up the frontend:
-```bash
-python -m streamlit run app.py
-```
-*(The UI will automatically open in your default browser at `localhost:8501`)*
+-   `MAX_QUESTIONS`: How many broad sub-topics the planner explores (Default: 3)
+-   `TOP_K_RESULTS`: How many high-ranking URLs are scraped per question (Default: 3)
+-   `MAX_CHUNKS_PER_URL`: How deeply the evaluator reads into each article (Default: 5)
+-   `LLM_MODEL`: Set to `llama-3.3-70b-versatile` or `llama3-8b-8192` depending on your account tiers/limits.
+
+---
+
+## 🛡️ Reliability Notes
+- **TPM Management**: If you hit "Request too large" errors on low-tier Groq accounts, the agent now automatically fragments text into 300-word windows to stay under 8,000 TPM limits.
+- **Structured Output**: Uses explicit `JsonOutputParser` chains to bypass Groq's tool-call handshake bugs for 100% stable formatting.
+

@@ -88,12 +88,20 @@ class VectorStore:
         if not facts:
             return
 
-        documents = [f["fact"] for f in facts]
-        metadatas = [{"source": str(f.get("source", "")), "confidence": float(f.get("confidence", 0.0))} for f in facts]
+        # Deduplicate facts within the current batch to prevent ChromaDB ID collision crashes
+        unique_facts = {}
+        for f in facts:
+            if f["fact"] not in unique_facts:
+                unique_facts[f["fact"]] = f
+                
+        deduped_facts = list(unique_facts.values())
+
+        documents = [f["fact"] for f in deduped_facts]
+        metadatas = [{"source": str(f.get("source", "")), "confidence": float(f.get("confidence", 0.0))} for f in deduped_facts]
         
-        # Create deterministic IDs based on the fact text to avoid duplicates
+        # Create deterministic IDs based on the fact text to avoid cross-batch duplicates
         import hashlib
-        ids = [hashlib.md5(f["fact"].encode()).hexdigest() for f in facts]
+        ids = [hashlib.md5(f["fact"].encode()).hexdigest() for f in deduped_facts]
 
         embeddings = self._get_embeddings(documents)
 

@@ -7,7 +7,7 @@ import os
 from api import database
 from graph.builder import build_graph
 from memory.vector_store import vector_store
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from config.settings import settings
 
@@ -105,7 +105,7 @@ def chat_with_session(session_id: str, request: ChatRequest):
     for r in results:
         context += f"- Fact: {r['fact']}\n"
         
-    llm = ChatOllama(model=settings.LLM_MODEL, temperature=0.3)
+    llm = ChatGroq(model=settings.LLM_MODEL, api_key=settings.GROQ_API_KEY, temperature=0.3)
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a helpful AI answering questions based strictly on the extracted research context below:\n\n{context}\n\nIf the answer is not in the context, politely state you don't have that information from the research."),
         ("human", "{question}")

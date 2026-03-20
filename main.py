@@ -72,11 +72,11 @@ def main():
         print("Type 'exit' or 'quit' to end the session.")
         
         from memory.vector_store import vector_store
-        from langchain_ollama import ChatOllama
+        from langchain_groq import ChatGroq
         from langchain_core.prompts import ChatPromptTemplate
         from config.settings import settings
         
-        chat_llm = ChatOllama(model=settings.LLM_MODEL, temperature=0.3)
+        chat_llm = ChatGroq(model=settings.LLM_MODEL, api_key=settings.GROQ_API_KEY, temperature=0.3)
         chat_prompt = ChatPromptTemplate.from_messages([
             ("system", "You are an expert research assistant answering follow-up questions. Use the provided Facts to answer accurately. If the answer is not in the facts, state so. Always cite your sources.\n\nFacts:\n{facts}"),
             ("human", "{question}")

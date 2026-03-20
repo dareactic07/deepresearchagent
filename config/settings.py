@@ -1,5 +1,12 @@
 import os
 from dataclasses import dataclass
+from dotenv import load_dotenv
+
+# Load .env file
+env_path = os.path.join(os.getcwd(), '.env')
+loaded = load_dotenv(env_path)
+print(f"DEBUG: Searching for .env at: {env_path}")
+print(f"DEBUG: .env loaded successfully: {loaded}")
 
 @dataclass
 class Settings:
@@ -16,21 +23,23 @@ class Settings:
     # - Ultra-end (64GB+ RAM / 24GB VRAM GPU): MAX_QUESTIONS=8, TOP_K_RESULTS=7, MAX_CHUNKS_PER_URL=30
     
     # Maximum number of research questions the planner will generate
-    MAX_QUESTIONS: int = 2
+    MAX_QUESTIONS: int = 3
     
     # Maximum number of search results (URLs) to scrape per question
     TOP_K_RESULTS: int = 3
     
     # Maximum number of text chunks to evaluate per URL
-    MAX_CHUNKS_PER_URL: int = 4
+    MAX_CHUNKS_PER_URL: int = 5
     
     # ---------------------------------------------------------
     # Core Application Settings
     # ---------------------------------------------------------
-    LLM_MODEL: str = "llama3"
+    LLM_MODEL: str = "openai/gpt-oss-20b"
     EMBEDDING_MODEL: str = "BAAI/bge-small-en"
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
     DB_DIR: str = os.path.join(os.getcwd(), "chroma_db")
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
 
 settings = Settings()

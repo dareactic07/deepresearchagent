@@ -5,14 +5,14 @@ import os
 from api import database
 from graph.builder import build_graph
 from memory.vector_store import vector_store
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.checkpoint.memory import MemorySaver
-from tools.search_tool import search_duckduckgo
-from tools.scraper_tool import scrape_url
-from utils.chunking import chunk_text
+from tools.tavily_tool import search_tavily
 from agents.evaluator import evaluator_node
 from config.settings import settings
+
+os.environ["STREAMLIT_MODE"] = "1"
 
 # Must be the very first Streamlit command
 st.set_page_config(page_title="Deep Research Agent", page_icon="🔍", layout="wide")
@@ -192,23 +192,35 @@ else:
                 
                 # --- DEEP SEARCH INJECTION ---
                 if deep_search:
-                    with st.spinner("🌐 Deep Searching the web..."):
+                    # 1. Contextual Query Rewrite
+                    with st.spinner("🧠 Analyzing conversation context..."):
+                        llm = ChatGroq(model=settings.LLM_MODEL, api_key=settings.GROQ_API_KEY, temperature=0.1)
+                        chat_history = "\n".join([f"{m['role']}: {m['content']}" for m in messages[-4:]])
+                        rewrite_prompt = ChatPromptTemplate.from_messages([
+                            ("system", "You are a search query generator. Rewrite the user's latest query into a standalone, highly specific web search string based on the conversation history. Resolve all pronouns (it, they, these, such things) to their exact subjects. Output ONLY the raw search string, nothing else."),
+                            ("human", "History:\n{history}\n\nLatest Query: {query}")
+                        ])
                         try:
-                            # 1. Search
-                            urls = search_duckduckgo(query)
-                            all_chunks = []
-                            # 2. Scrape Top 2 URLs for speed
-                            for url in urls[:2]:
-                                text = scrape_url(url)
-                                if text:
-                                    chunks = chunk_text(text)
-                                    all_chunks.extend([{"text": c, "url": url} for c in chunks])
+                            rewritten_query = (rewrite_prompt | llm).invoke({"history": chat_history, "query": query}).content.strip()
+                            st.toast(f"Deep Search translated query to: {rewritten_query}")
+                        except:
+                            rewritten_query = query # fallback
+                            
+                    with st.spinner(f"🌐 Deep Searching: {rewritten_query}..."):
+                        try:
+                            # 2. Search & Extract (Unified in Tavily)
+                            results = search_tavily(rewritten_query)
+                            
+                            all_chunks = [
+                                {"text": r.get('raw_content') or r.get('content'), "url": r.get('url')} 
+                                for r in results
+                            ]
                             
                             # 3. Evaluate and inject facts
                             if all_chunks:
-                                eval_state = {"question": query, "chunks": all_chunks}
+                                eval_state = {"question": rewritten_query, "chunks": all_chunks}
                                 eval_result = evaluator_node(eval_state)
-                                facts = eval_result["validated_facts"].get(query, [])
+                                facts = eval_result["validated_facts"].get(rewritten_query, [])
                                 if facts:
                                     vector_store.add_facts(facts)
                                     st.toast(f"✅ Injected {len(facts)} new facts into knowledge base!")
@@ -223,7 +235,7 @@ else:
                     for r in results:
                         context += f"- Fact: {r['fact']}\n"
                         
-                    llm = ChatOllama(model=settings.LLM_MODEL, temperature=0.3)
+                    llm = ChatGroq(model=settings.LLM_MODEL, api_key=settings.GROQ_API_KEY, temperature=0.3)
                     prompt = ChatPromptTemplate.from_messages([
                         ("system", "You are a helpful AI answering questions based strictly on the extracted research context below:\n\n{context}\n\nIf the answer is not in the context, politely state you don't have that information from the research."),
                         ("human", "{question}")
