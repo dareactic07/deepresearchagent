@@ -11,12 +11,15 @@ class ResearchQuestions(BaseModel):
 
 def planner_node(state: dict) -> dict:
     topic = state["topic"]
+    previous_questions = state.get("questions", [])
     
     llm = ChatOllama(model=settings.LLM_MODEL, temperature=0.7)
     
+    prev_q_text = "\n".join([f"- {q}" for q in previous_questions]) if previous_questions else "None"
+    
     prompt = ChatPromptTemplate.from_messages([
-        ("system", f"You are an expert research assistant. Analyze the given research topic. First, write a detailed 'plan_rationale' explaining your overall research strategy. Then, break down the topic into exactly {settings.MAX_QUESTIONS} highly relevant, structured research questions that cover different key aspects."),
-        ("human", "Topic: {topic}")
+        ("system", f"You are an expert research assistant. Analyze the given research topic and any user feedback. First, write a detailed 'plan_rationale' explaining your overall research strategy. Then, formulate the research questions. \n\nCRITICAL RULES:\n1. You MUST generate a MINIMUM of 3 highly specific, detailed questions. Never output placeholders like 'Question 1' or 'Question 2'.\n2. If 'Previous Questions' are provided below, you MUST RETAIN THEM exactly as they are, and merely APPEND any new questions requested by the user's feedback, UNLESS the user explicitly asks to replace or delete them. Do not wipe out the old questions.\n3. Keep the total questions under {settings.MAX_QUESTIONS}."),
+        ("human", "Topic / Feedback: {topic}\n\nPrevious Questions:\n{prev_q_text}")
     ])
     
     try:
@@ -24,7 +27,7 @@ def planner_node(state: dict) -> dict:
         chain = prompt | structured_llm
         print(f"Planning research questions for: {topic}")
         with llm_lock:
-            response = chain.invoke({"topic": topic})
+            response = chain.invoke({"topic": topic, "prev_q_text": prev_q_text})
         questions = response.questions
         plan_rationale = response.plan_rationale
         # Enforce limit just in case LLM outputs too many

@@ -8,7 +8,7 @@ from utils.llm_lock import llm_lock
 
 class ExtractedFact(BaseModel):
     fact: str = Field(description="The extracted factual information")
-    source: str = Field(description="The source URL or chunk reference")
+    source_id: int = Field(description="The integer ID of the chunk that provided this fact (e.g., 0, 1, 2)")
     relevance: float = Field(description="Relevance score to the question (0.0 to 1.0)")
     clarity: float = Field(description="Clarity score of the fact (0.0 to 1.0)")
 
@@ -26,20 +26,29 @@ def evaluator_node(state: dict) -> dict:
     validated_facts = []
     
     if not chunks:
+        print(f"⚠️ No scraped text chunks available for question: '{question}'. Skipping evaluation.")
         return {"validated_facts": {question: []}}
         
     llm = ChatOllama(model=settings.LLM_MODEL, temperature=0.1)
     
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert Critic and Validation Agent. Review the provided text chunks to answer the research question. Extract only high-quality, non-redundant facts. Actively identify and EXCLUDE low-quality sources, contradictions, or unverified claims. Rate relevance and clarity from 0.0 to 1.0. For the 'source' field, YOU MUST USE THE EXACT URL provided with the chunk. If no reliable facts are found or if the sources are too contradictory, return an empty list."),
+        ("system", "You are an expert Critic and Validation Agent. Extract high-quality facts from the chunks based on the question. EXCLUDE contradictions. Rate relevance and clarity on a strict, granular decimal scale from 0.0 to 1.0 (e.g., 0.72, 0.85, 0.94). DO NOT default to 1.0; be fiercely critical and realistic. For the 'source_id' field, YOU MUST return the exact INTEGER ID (e.g. 0, 1, 2) that corresponds to the chunk where you found the fact."),
         ("human", "Question: {question}\n\nText Chunks:\n{chunks}")
     ])
     
-    # Process a highly focused amount of chunks.
-    # Format chunks to include the URL clearly
+    # Process a highly focused amount of chunks using RAG semantic filtering.
+    from memory.vector_store import vector_store
+    
     formatted_chunks = []
-    for i, c in enumerate(chunks[:settings.MAX_CHUNKS_PER_URL]):
-        formatted_chunks.append(f"URL: {c.get('url', 'Unknown')}\nTEXT: {c.get('text', '')}")
+    if chunks:
+        texts_only = [c.get('text', '') for c in chunks]
+        top_indices = vector_store.rank_texts(question, texts_only, top_k=settings.MAX_CHUNKS_PER_URL)
+        ranked_chunks = [chunks[i] for i in top_indices]
+    else:
+        ranked_chunks = []
+
+    for i, c in enumerate(ranked_chunks):
+        formatted_chunks.append(f"CHUNK ID: {i}\nTEXT: {c.get('text', '')}")
         
     chunk_text = "\n\n---\n\n".join(formatted_chunks)
     
@@ -53,9 +62,14 @@ def evaluator_node(state: dict) -> dict:
         for f in response.facts:
             score = calculate_score(f.relevance, f.clarity)
             if score >= 0.6: # Configurable threshold
+                # Safely map the integer ID back to the exact URL!
+                mapped_url = "Unknown"
+                if 0 <= f.source_id < len(ranked_chunks):
+                    mapped_url = ranked_chunks[f.source_id].get('url', 'Unknown')
+                    
                 validated_facts.append({
                     "fact": f.fact,
-                    "source": f.source,
+                    "source": mapped_url,
                     "confidence": score
                 })
     except Exception as e:

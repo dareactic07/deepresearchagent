@@ -14,6 +14,12 @@ def main():
     # 1. Build the graph
     app = build_graph()
     
+    #    settings.validate()
+    
+    # Clear previous persistent facts so the chat loop is exclusive to this run's topic
+    from memory.vector_store import vector_store
+    vector_store.clear()
+    
     # 2. Setup initial state
     initial_state = {
         "topic": args.topic,
@@ -41,6 +47,7 @@ def main():
                     url_dict = state_update.get('urls_per_question', {})
                     for q, urls in url_dict.items():
                         if urls:
+                            print(urls)
                             print(f"   Found {len(urls)} URLs for question...")
                 elif node == "evaluator":
                     facts_dict = state_update.get('validated_facts', {})

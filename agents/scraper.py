@@ -15,7 +15,8 @@ def scraper_node(state: dict) -> dict:
         content = scrape_url(url)
         if content:
             chunks = chunk_text(content)
-            for c in chunks:
+            # Cap the maximum chunks processed per url to 15 to prevent CPU embedding overload for advanced RAG
+            for c in chunks[:15]:
                 all_chunks.append({"text": c, "url": url})
             
     return {"extracted_content": {question: all_chunks}}

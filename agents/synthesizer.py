@@ -14,7 +14,7 @@ def synthesizer_node(state: ResearchState) -> dict:
         if facts:
             facts_text += f"\n### {question}\n"
             for f in facts:
-                facts_text += f"- (Confidence: {f['confidence']}) {f['fact']}\n"
+                facts_text += f"- Fact: {f['fact']} | Source: {f.get('source', 'Unknown')} | Confidence: {f['confidence']:.2f}\n"
                 sources.add(f.get("source", "Unknown"))
                 
     source_list = "\n".join([f"- {s}" for s in sources])

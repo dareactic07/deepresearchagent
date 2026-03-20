@@ -1,29 +1,31 @@
-# Multi-Agent Deep Researcher 🕵️‍♂️🤖
+# Multi-Agent Deep Researcher (Streamlit Web App) 🕵️‍♂️🤖
 
-A fully modular, production-quality multi-agent research assistant built with **LangGraph, LangChain, Ollama (LLaMA 3), HuggingFace embeddings, ChromaDB, and DuckDuckGo search**. 
+A fully modular, production-quality multi-agent research assistant built with **LangGraph, LangChain, Ollama (LLaMA 3), HuggingFace embeddings, ChromaDB, and Streamlit**. 
 
-This system takes a user research topic, automatically decomposes it into high-value sub-questions, parallel-searches the web, extracts fact-based knowledge, evaluates the findings, and synthesizes a comprehensive final markdown report—all while running **100% locally**.
+This system takes a user research topic, automatically decomposes it into high-value sub-questions, parallel-searches the web, extracts fact-based knowledge, evaluates the findings, and synthesizes a comprehensive final markdown report. It also features a sleek, **Perplexity-style web UI** for historical chat tracking!
 
 ---
 
 ## 🌟 Features
 
 - **Multi-Agent Orchestration**: Utilizes LangGraph for stateful, cyclic, and parallel execution.
+- **Sleek Web Interface**: Runs a pure-Python Streamlit UI with sidebar chat-histories, dynamic text auto-resizing, and seamless visual feedback.
+- **Persistent Long-Term Memory**: High-confidence facts are embedded using `BAAI/bge-small-en` and stored locally in a persistent, session-isolated ChromaDB vector store.
+- **Human-in-the-Loop (HITL)**: The AI pauses before diving into internet scrapes, allowing you to explicitly modify its research Plan via the UI!
+- **Deep Search Follow Ups**: Chatting inside an active session utilizes Local RAG context isolation. However, you can toggle **Deep Search** on, which automatically kicks off a DuckDuckGo investigation to find live answers to new questions and inject them directly into your database.
 - **Local AI Engines**: Powered entirely by local `llama3` via Ollama. No paid APIs required!
-- **Persistent Long-Term Memory**: High-confidence facts are embedded using `BAAI/bge-small-en` and stored locally in a persistent ChromaDB vector store.
-- **Dynamic Configuration**: Easily scales from low-end 4GB VRAM/CPU setups up to ultra-high-end 24GB GPUs via centralized settings.
-- **Source & Confidence Tracking**: Every fact presented in the final report maps back to its exact DuckDuckGo source URL alongside a mathematically calculated Confidence Score.
 
 ---
 
 ## 🏗️ Architecture Workflow
 
 1. **Planner Agent**: Uses structured output to decompose the main topic into a specific set of optimized research questions.
-2. **Search Agent**: (Parallel) Executes DuckDuckGo searches for each generated research question.
-3. **Scraper Agent**: (Parallel) Fetches raw HTML via Trafilatura, stripping out ads, navigation wrappers, and scripts, then chunks the text down to context-friendly token sizes.
-4. **Evaluator Agent**: (Sequential/Parallel) Inspects the scraped chunks. Extracts high-quality, non-redundant facts, assigning scores based on Relevance and Clarity.
-5. **Memory Store**: Persists validated high-confidence facts long-term into a local ChromaDB instance.
-6. **Synthesizer Agent**: Aggregates the validated truth data to compile a beautifully formatted, exhaustive Markdown report.
+2. **Human Approval Checkpoint**: Streamlit natively pauses Langgraph execution and renders the plan for user approval.
+3. **Search Agent**: Executes DuckDuckGo searches for each generated research question.
+4. **Scraper Agent**: Fetches raw HTML via Jina Reader or BeautifulSoup, chunking text cleanly.
+5. **Evaluator Agent**: Inspects the scraped chunks. Extracts high-quality, non-redundant facts, assigning Float-based Confidence Scores.
+6. **Memory Store**: Persists validated high-confidence facts into an isolated ChromaDB collection.
+7. **Synthesizer Agent**: Aggregates the validated truth data to compile a beautifully formatted, exhaustive Markdown report.
 
 ---
 
@@ -80,10 +82,10 @@ Because this agent runs completely locally, it can be computationally heavy. Ope
 
 ## 🖥️ Usage
 
-Execute the main entry script. You can optionally provide your research topic directly over the command line:
+We have entirely deprecated the legacy terminal interface `main.py` in favor of a gorgeous `Streamlit` Web App UI with integrated SQLite Session routing.
 
+Simply boot up the frontend:
 ```bash
-python main.py "The impact of Quantum Computing on RSA Cryptography"
+python -m streamlit run app.py
 ```
-
-The console will stream live updates as the agents progress through the graph nodes, ultimately printing a massive Deep Research Markdown report directly to the terminal!
+*(The UI will automatically open in your default browser at `localhost:8501`)*

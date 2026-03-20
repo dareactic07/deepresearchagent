@@ -12,8 +12,16 @@ from agents.synthesizer import synthesizer_node
 from memory.vector_store import vector_store
 
 def human_approval_node(state: ResearchState) -> dict:
-    """Takes user input to approve or modify plan. This will be intercepted or just run with input() for CLI."""
-    pass # In CLI, we can just use input() inside the node!
+    """Takes user input to approve or modify plan. Bypassed automatically in UI API mode."""
+    import os, sys
+    if os.environ.get("API_MODE") == "1":
+        return {"topic": state["topic"], "questions": state["questions"], "approved": True}
+        
+    if not sys.stdin.isatty():
+        # Non-interactive mode (Streamlit). State is modified externally by the UI.
+        return {}
+
+        
     print("\n" + "="*50)
     print("📋 PROPOSED RESEARCH PLAN")
     print("="*50)
@@ -71,7 +79,7 @@ def route_approval(state: ResearchState):
         return schedule_search(state)
     return "planner"
 
-def build_graph():
+def build_graph(checkpointer=None, interrupt_before=None):
     builder = StateGraph(ResearchState)
     
     builder.add_node("planner", planner_node)
@@ -91,4 +99,10 @@ def build_graph():
     builder.add_edge("memory_store", "synthesizer")
     builder.add_edge("synthesizer", END)
     
-    return builder.compile()
+    kwargs = {}
+    if checkpointer is not None:
+        kwargs["checkpointer"] = checkpointer
+    if interrupt_before is not None:
+        kwargs["interrupt_before"] = interrupt_before
+        
+    return builder.compile(**kwargs)

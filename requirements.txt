@@ -9,3 +9,5 @@ langchain-huggingface
 langchain-text-splitters
 lxml_html_clean
 pydantic
+streamlit
+beautifulsoup4
