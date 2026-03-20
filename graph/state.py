@@ -20,4 +20,6 @@ class ResearchState(TypedDict):
     extracted_content: Annotated[Dict[str, List[Dict[str, str]]], merge_dict_list]
     validated_facts: Annotated[Dict[str, List[Dict[str, Any]]], merge_dict_list]
     scores: Annotated[Dict[str, List[float]], merge_dict_list]
+    research_plan: Optional[str]
+    approved: bool
     final_report: Optional[str]

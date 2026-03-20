@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any
 from config.settings import settings
 from utils.scoring import calculate_score
+from utils.llm_lock import llm_lock
 
 class ExtractedFact(BaseModel):
     fact: str = Field(description="The extracted factual information")
@@ -30,7 +31,7 @@ def evaluator_node(state: dict) -> dict:
     llm = ChatOllama(model=settings.LLM_MODEL, temperature=0.1)
     
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert evaluator. Extract the most important facts from the provided text chunks that answer the question. Only include high-quality, non-redundant facts. Rate relevance and clarity from 0.0 to 1.0. For the 'source' field, YOU MUST USE THE EXACT URL provided with the chunk. If no relevant facts are found, return an empty list."),
+        ("system", "You are an expert Critic and Validation Agent. Review the provided text chunks to answer the research question. Extract only high-quality, non-redundant facts. Actively identify and EXCLUDE low-quality sources, contradictions, or unverified claims. Rate relevance and clarity from 0.0 to 1.0. For the 'source' field, YOU MUST USE THE EXACT URL provided with the chunk. If no reliable facts are found or if the sources are too contradictory, return an empty list."),
         ("human", "Question: {question}\n\nText Chunks:\n{chunks}")
     ])
     
@@ -46,7 +47,8 @@ def evaluator_node(state: dict) -> dict:
         structured_llm = llm.with_structured_output(FactList)
         chain = prompt | structured_llm
         print(f"Evaluating chunks for question: {question}")
-        response = chain.invoke({"question": question, "chunks": chunk_text})
+        with llm_lock:
+            response = chain.invoke({"question": question, "chunks": chunk_text})
         
         for f in response.facts:
             score = calculate_score(f.relevance, f.clarity)

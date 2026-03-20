@@ -30,9 +30,9 @@ def main():
     try:
         # We need to maintain the cumulative state manually if we want to print things during run, 
         # or just rely on the step outputs which contain the diffs applied to state based on our reducers.
-        # We limit max_concurrency to 1 because local LLMs (Ollama) will struggle/crash when hit with 8 concurrent heavy evaluation requests
+        # We limit max_concurrency to 10 to allow parallel scraping/searching, while Ollama is protected via llm_lock.
         final_state = None
-        for step in app.stream(initial_state, config={"recursion_limit": 50, "max_concurrency": 1}):
+        for step in app.stream(initial_state, config={"recursion_limit": 50, "max_concurrency": 10}):
             for node, state_update in step.items():
                 print(f"✅ Completed node: {node}")
                 if node == "planner":
@@ -57,6 +57,46 @@ def main():
             print(final_state['synthesizer'].get("final_report", "No report generated."))
         else:
             print("Finished workflow execution.")
+
+        print(f"\n{'='*50}")
+        print("CONVERSATIONAL FOLLOW-UP")
+        print(f"{'='*50}\n")
+        print("You can now ask questions about the generated research!")
+        print("Type 'exit' or 'quit' to end the session.")
+        
+        from memory.vector_store import vector_store
+        from langchain_ollama import ChatOllama
+        from langchain_core.prompts import ChatPromptTemplate
+        from config.settings import settings
+        
+        chat_llm = ChatOllama(model=settings.LLM_MODEL, temperature=0.3)
+        chat_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert research assistant answering follow-up questions. Use the provided Facts to answer accurately. If the answer is not in the facts, state so. Always cite your sources.\n\nFacts:\n{facts}"),
+            ("human", "{question}")
+        ])
+        chat_chain = chat_prompt | chat_llm
+
+        while True:
+            user_question = input("\nAsk a question: ").strip()
+            if user_question.lower() in ['exit', 'quit', '']:
+                print("\nExiting deep research agent. Goodbye!")
+                break
+                
+            results = vector_store.search_facts(user_question, n_results=5)
+            if not results:
+                print("No relevant facts found in the knowledge base.")
+                continue
+                
+            facts_text = ""
+            for r in results:
+                facts_text += f"- {r['fact']} (Source: {r['metadata'].get('source', 'Unknown')})\n"
+                
+            print("\nAnalyzing knowledge base...")
+            try:
+                response = chat_chain.invoke({"facts": facts_text, "question": user_question})
+                print(f"\n{response.content}")
+            except Exception as e:
+                print(f"Error generating answer: {e}")
             
     except Exception as e:
         print(f"\nWorkflow failed with error: {e}")

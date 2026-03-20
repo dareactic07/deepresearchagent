@@ -2,6 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from config.settings import settings
 from graph.state import ResearchState
+from utils.llm_lock import llm_lock
 
 def synthesizer_node(state: ResearchState) -> dict:
     topic = state.get("topic", "")
@@ -37,7 +38,8 @@ def synthesizer_node(state: ResearchState) -> dict:
     chain = prompt | llm
     
     try:
-        response = chain.invoke({"topic": topic, "facts": facts_text})
+        with llm_lock:
+            response = chain.invoke({"topic": topic, "facts": facts_text})
         final_report = response.content
     except Exception as e:
         print(f"Error in synthesizer: {e}")

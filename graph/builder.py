@@ -1,5 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.constants import Send
+from langgraph.checkpoint.memory import MemorySaver
 from typing import List
 
 from graph.state import ResearchState
@@ -9,6 +10,27 @@ from agents.scraper import scraper_node
 from agents.evaluator import evaluator_node
 from agents.synthesizer import synthesizer_node
 from memory.vector_store import vector_store
+
+def human_approval_node(state: ResearchState) -> dict:
+    """Takes user input to approve or modify plan. This will be intercepted or just run with input() for CLI."""
+    pass # In CLI, we can just use input() inside the node!
+    print("\n" + "="*50)
+    print("📋 PROPOSED RESEARCH PLAN")
+    print("="*50)
+    print(state.get("research_plan", "No rationale given."))
+    print("\nQuestions to investigate:")
+    for q in state.get("questions", []):
+        print(f"- {q}")
+    
+    while True:
+        choice = input("\nApprove this plan? [y/modify]: ").strip().lower()
+        if choice in ['y', 'yes']:
+            # Signal explicit approval via a dedicated state flag! None of this string parsing mess.
+            return {"topic": state["topic"], "questions": state["questions"], "approved": True}
+        else:
+            feedback = input("\nEnter feedback to adjust the research plan: ").strip()
+            # Append to topic AND reset approval flag
+            return {"topic": state["topic"] + "\nUser Feedback: " + feedback, "questions": state["questions"], "approved": False}
 
 def schedule_search(state: ResearchState) -> List[Send]:
     """Map each question to a search_node call."""
@@ -43,10 +65,17 @@ def memory_store_node(state: ResearchState) -> dict:
         
     return {}
 
+def route_approval(state: ResearchState):
+    # Reliable routing using the explicit boolean flag to prevent infinite loops!
+    if state.get("approved"):
+        return schedule_search(state)
+    return "planner"
+
 def build_graph():
     builder = StateGraph(ResearchState)
     
     builder.add_node("planner", planner_node)
+    builder.add_node("human_approval", human_approval_node)
     builder.add_node("search", search_node)
     builder.add_node("scraper", scraper_node)
     builder.add_node("evaluator", evaluator_node)
@@ -54,7 +83,8 @@ def build_graph():
     builder.add_node("synthesizer", synthesizer_node)
     
     builder.add_edge(START, "planner")
-    builder.add_conditional_edges("planner", schedule_search, ["search"])
+    builder.add_edge("planner", "human_approval")
+    builder.add_conditional_edges("human_approval", route_approval, ["planner", "search"])
     builder.add_conditional_edges("search", schedule_scraper, ["scraper"])
     builder.add_conditional_edges("scraper", schedule_evaluator, ["evaluator"])
     builder.add_edge("evaluator", "memory_store")
