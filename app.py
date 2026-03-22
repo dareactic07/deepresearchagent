@@ -45,7 +45,7 @@ with st.sidebar:
         st.caption("No history yet. Start a topic!")
         
     for session in sessions:
-        c1, c2 = st.columns([5, 1])
+        c1, c2 = st.columns([5, 1], vertical_alignment="center")
         with c1:
             is_active = (st.session_state.active_session_id == session['id'])
             
@@ -62,7 +62,7 @@ with st.sidebar:
                 st.session_state.active_session_id = session['id']
                 st.rerun()
         with c2:
-            if st.button("🗑️", key=f"del_{session['id']}", help="Delete this topic entirely"):
+            if st.button("🗑️", key=f"del_{session['id']}", help="Delete this topic entirely", use_container_width=True):
                 database.delete_session(session['id'])
                 vector_store.delete_session(session['id'])
                 if st.session_state.active_session_id == session['id']:
@@ -233,11 +233,12 @@ else:
                     
                     context = ""
                     for r in results:
-                        context += f"- Fact: {r['fact']}\n"
+                        source_url = r.get("metadata", {}).get("source", "Unknown") if r.get("metadata") else "Unknown"
+                        context += f"- Fact: {r['fact']} (Source: {source_url})\n"
                         
                     llm = ChatGroq(model=settings.LLM_MODEL, api_key=settings.GROQ_API_KEY, temperature=0.3)
                     prompt = ChatPromptTemplate.from_messages([
-                        ("system", "You are a helpful AI answering questions based strictly on the extracted research context below:\n\n{context}\n\nIf the answer is not in the context, politely state you don't have that information from the research."),
+                        ("system", "You are a helpful AI answering questions based strictly on the extracted research context below:\n\n{context}\n\nIf the answer is not in the context, politely state you don't have that information from the research. IMPORTANT: Format your answer like an academic paper. Use numerical bracketed citations inline (e.g., [1], [2]) for every claim, and provide a 'References' section at the very end mapping the numbers to the provided Source URLs."),
                         ("human", "{question}")
                     ])
                     
@@ -247,5 +248,6 @@ else:
                         ai_reply = response.content
                         st.markdown(ai_reply)
                         database.add_message(session_id, "assistant", ai_reply)
+                        st.rerun()
                     except Exception as e:
                         st.error(f"Error querying local context: {str(e)}")
