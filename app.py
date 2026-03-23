@@ -150,7 +150,7 @@ else:
                 for q in state.values.get("questions", []):
                     st.markdown(f"- {q}")
                     
-            c1, c2 = st.columns(2)
+            c1, c2, c3 = st.columns(3)
             with c1:
                 if st.button("✅ Approve & Begin Deep Research", type="primary", use_container_width=True):
                     workflow.update_state(config, {"approved": True})
@@ -169,6 +169,19 @@ else:
                         new_topic = state.values["topic"] + "\nUser Feedback: " + feedback
                         workflow.update_state(config, {"approved": False, "topic": new_topic})
                         with st.spinner("⏳ Re-planning..."):
+                            try:
+                                workflow.invoke(None, config=config)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Replanning Error: {str(e)}")
+            with c3:
+                with st.popover("❌ Reject & Rewrite", use_container_width=True):
+                    new_topic = st.text_area("Rewrite the starting topic:", value=state.values.get("topic", ""))
+                    if st.button("Submit New Topic", type="primary"):
+                        workflow.update_state(config, {"approved": False, "topic": new_topic})
+                        database.update_session_topic(session_id, new_topic)
+                        database.update_first_user_message(session_id, new_topic)
+                        with st.spinner("⏳ Re-planning with new topic..."):
                             try:
                                 workflow.invoke(None, config=config)
                                 st.rerun()
@@ -238,7 +251,7 @@ else:
                         
                     llm = ChatGroq(model=settings.LLM_MODEL, api_key=settings.GROQ_API_KEY, temperature=0.3)
                     prompt = ChatPromptTemplate.from_messages([
-                        ("system", "You are a helpful AI answering questions based strictly on the extracted research context below:\n\n{context}\n\nIf the answer is not in the context, politely state you don't have that information from the research. IMPORTANT: Format your answer like an academic paper. Use numerical bracketed citations inline (e.g., [1], [2]) for every claim, and provide a 'References' section at the very end mapping the numbers to the provided Source URLs."),
+                        ("system", "You are a helpful AI answering questions based strictly on the extracted research context below:\n\n{context}\n\nIf the answer is not in the context, politely state you don't have that information from the research. IMPORTANT: Format your answer like an academic paper. Use numerical bracketed citations inline (e.g., [1], [2]) for every claim, and provide a 'References' section at the very end mapping the numbers to the provided Source URLs. CRITICAL: Do NOT repeat the same URL in the References section. If multiple claims come from the same source URL, use the same citation number for all of them so the URL only appears once in the References list."),
                         ("human", "{question}")
                     ])
                     

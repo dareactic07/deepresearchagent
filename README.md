@@ -1,4 +1,7 @@
-# Deep Research Agent 🕵️‍♂️🤖
+
+
+# Deep Research Agent 🕵️‍♂️🤖 (GITHUB REPO: https://github.com/dareactic07/deepresearchagent)
+
 ### Powered by Groq LPUs & Tavily Search
 
 A production-grade multi-agent research assistant built with **LangGraph, LangChain, Groq (Llama 3.3/70B), Tavily, and Streamlit**. 

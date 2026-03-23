@@ -26,7 +26,7 @@ def synthesizer_node(state: ResearchState) -> dict:
                    "Using the provided extracted facts, write a HIGHLY DETAILED, EXTENSIVE, AND COMPREHENSIVE markdown research report.\n"
                    "CRITICAL INSTRUCTION: You must complete the report. DO NOT get cut off due to length. Ensure you manage your length so the 'References' section is ALWAYS generated at the very end.\n"
                    "CRITICAL INSTRUCTION: Format the report like an academic research paper. For EVERY single claim or fact, you MUST include a bracketed numerical citation inline (e.g., [1], [2]).\n"
-                   "At the very end of the report, you MUST include a 'References' section that maps each number to its exact Source URL.\n"
+                   "At the very end of the report, you MUST include a 'References' section that maps each number to its exact Source URL. CRITICAL: Do NOT repeat the same URL in the References section. If multiple claims come from the same source URL, use the SAME citation number for all of them so the URL only appears once in the References list.\n"
                    "Format exactly as follows:\n\n"
                    "# <Topic>\n\n"
                    "## Abstract\n<1-2 paragraphs summarizing the entire topic. Use numerical citations [1]>\n\n"
@@ -34,7 +34,7 @@ def synthesizer_node(state: ResearchState) -> dict:
                    "## Detailed Analysis\n<Multiple extensive sections explaining the facts in depth, categorized logically. Use numerical citations [3]>\n\n"
                    "## References\n"
                    "<A numbered list mapping your inline citations to the exact Source URLs provided in the facts. E.g., [1] https://...>\n"),
-        ("human", "Topic: {topic}\n\nExtracted Facts:\n{facts}\n\nWrite the most detailed, extensive report possible based on these facts. Do NOT hallucinate URLs. You MUST use academic numerical citations [1] inline, and list the exact sources in the References section at the end. Failure to cite the source for a claim is unacceptable.")
+        ("human", "Topic: {topic}\n\nExtracted Facts:\n{facts}\n\nWrite the most detailed, extensive report possible based on these facts. Do NOT hallucinate URLs. You MUST use academic numerical citations [1] inline, and list the exact sources in the References section at the end without repeating any URLs. Failure to cite the source for a claim is unacceptable.")
     ])
     
     chain = prompt | llm

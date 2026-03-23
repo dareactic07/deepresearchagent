@@ -47,6 +47,14 @@ def get_messages(session_id: str):
         cur = conn.execute('SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp ASC', (session_id,))
         return [dict(row) for row in cur.fetchall()]
 
+def update_session_topic(session_id: str, topic: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute('UPDATE sessions SET topic = ? WHERE id = ?', (topic, session_id))
+
+def update_first_user_message(session_id: str, new_content: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute('UPDATE messages SET content = ? WHERE session_id = ? AND role = "user" AND id = (SELECT MIN(id) FROM messages WHERE session_id = ?)', (new_content, session_id, session_id))
+
 def delete_session(session_id: str):
     with sqlite3.connect(DB_PATH) as conn:
         # SQLite PRAGMA foreign_keys = ON; needs to be set per connection for cascade to work natively
