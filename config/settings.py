@@ -34,7 +34,7 @@ class Settings:
     # ---------------------------------------------------------
     # Core Application Settings
     # ---------------------------------------------------------
-    LLM_MODEL: str = "openai/gpt-oss-20b"
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
     EMBEDDING_MODEL: str = "BAAI/bge-small-en"
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
