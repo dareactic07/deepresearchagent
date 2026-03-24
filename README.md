@@ -1,6 +1,6 @@
 
 
-# Deep Research Agent 🕵️‍♂️🤖 (GITHUB REPO: https://github.com/dareactic07/deepresearchagent)
+# Deep Research Agent 🕵️‍♂️🤖
 
 ### Powered by Groq LPUs & Tavily Search
 
